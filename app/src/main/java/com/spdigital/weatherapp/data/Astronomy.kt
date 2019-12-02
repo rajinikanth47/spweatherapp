@@ -1,5 +1,8 @@
 package com.spdigital.weatherapp.data
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Astronomy(
     val moon_illumination: String,
     val moon_phase: String,

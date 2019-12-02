@@ -1,5 +1,8 @@
 package com.spdigital.weatherapp.data
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Month(
     val absMaxTemp: String,
     val absMaxTemp_F: String,

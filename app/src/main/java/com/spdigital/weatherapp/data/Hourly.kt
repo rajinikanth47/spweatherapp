@@ -1,5 +1,8 @@
 package com.spdigital.weatherapp.data
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Hourly(
     val DewPointC: String,
     val DewPointF: String,
