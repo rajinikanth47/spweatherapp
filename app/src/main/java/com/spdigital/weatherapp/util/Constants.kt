@@ -4,5 +4,6 @@ object Constants{
 
     val KEY_API_RESPONSE = "KeyAPIResponseFromWorker"
     val KEY_INPUT_DATA = "KeyAPIInputToWorker"
+    var KEY_IMAGE_URL = "DownloadImageUrl"
 
 }

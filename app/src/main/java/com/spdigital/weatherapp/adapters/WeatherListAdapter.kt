@@ -1,5 +1,6 @@
 package com.spdigital.weatherapp.adapters
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
@@ -20,6 +21,7 @@ class WeatherListAdapter :
                 LayoutInflater.from(parent.context),
                 R.layout.weatherinfo_listitem, parent, false
             )
+
         )
     }
 
@@ -35,6 +37,7 @@ class WeatherListAdapter :
             with(binding) {
                 // binding.location = data
                 viewModel = WeatherItemInfoViewModel(data)
+                viewModel?.getWeatherIcon(binding.imageView)
                 executePendingBindings()
             }
         }
