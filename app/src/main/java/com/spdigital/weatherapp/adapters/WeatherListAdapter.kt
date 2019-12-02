@@ -7,11 +7,12 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.spdigital.weatherapp.R
+import com.spdigital.weatherapp.data.WeatherDisplayItem
 import com.spdigital.weatherapp.databinding.WeatherinfoListitemBinding
 import com.spdigital.weatherapp.viewmodel.WeatherItemInfoViewModel
 
 class WeatherListAdapter :
-    ListAdapter<String, WeatherListAdapter.ViewHolder>(WeatherDiffCallback()) {
+    ListAdapter<WeatherDisplayItem, WeatherListAdapter.ViewHolder>(WeatherDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(
@@ -30,9 +31,9 @@ class WeatherListAdapter :
         private val binding: WeatherinfoListitemBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(data: String) {
+        fun bind(data: WeatherDisplayItem) {
             with(binding) {
-               // binding.location = data
+                // binding.location = data
                 viewModel = WeatherItemInfoViewModel(data)
                 executePendingBindings()
             }
@@ -40,13 +41,19 @@ class WeatherListAdapter :
     }
 }
 
-private class WeatherDiffCallback : DiffUtil.ItemCallback<String>() {
+private class WeatherDiffCallback : DiffUtil.ItemCallback<WeatherDisplayItem>() {
 
-    override fun areItemsTheSame(oldItem: String, newItem: String): Boolean {
+    override fun areItemsTheSame(
+        oldItem: WeatherDisplayItem,
+        newItem: WeatherDisplayItem
+    ): Boolean {
         return oldItem == newItem
     }
 
-    override fun areContentsTheSame(oldItem: String, newItem: String): Boolean {
+    override fun areContentsTheSame(
+        oldItem: WeatherDisplayItem,
+        newItem: WeatherDisplayItem
+    ): Boolean {
         return oldItem == newItem
     }
 }

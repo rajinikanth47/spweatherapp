@@ -1,9 +1,11 @@
 package com.spdigital.weatherapp.viewmodel
 
-class WeatherItemInfoViewModel(item:String) {
+import com.spdigital.weatherapp.data.WeatherDisplayItem
 
-    private val location = item
+class WeatherItemInfoViewModel(item:WeatherDisplayItem) {
+
+    private val loc = item
 
     val getLocation
-        get() = location
+        get() = loc.locationCondition?.temp_C?:"NA"
 }

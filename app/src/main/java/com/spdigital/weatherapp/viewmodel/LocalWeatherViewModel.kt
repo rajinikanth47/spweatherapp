@@ -24,7 +24,7 @@ class LocalWeatherViewModel(application: Application) : AndroidViewModel(applica
         liveWorkRequest.value = workRequest
 
         workRequest?.let{
-            WorkManager.getInstance(mContext).enqueue(it).result
+            WorkManager.getInstance(mContext).enqueue(it)
         }
     }
 

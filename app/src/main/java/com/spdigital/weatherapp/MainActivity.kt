@@ -8,8 +8,10 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.spdigital.weatherapp.adapters.WeatherListAdapter
+import com.spdigital.weatherapp.data.WeatherDisplayItem
 import com.spdigital.weatherapp.databinding.ActivityMainBinding
 import com.spdigital.weatherapp.util.Constants
+import com.spdigital.weatherapp.util.JsonUtils
 import com.spdigital.weatherapp.util.LocationQueue
 import com.spdigital.weatherapp.viewmodel.LocalWeatherViewModel
 import kotlinx.android.synthetic.main.activity_main.*
@@ -46,14 +48,12 @@ class MainActivity : AppCompatActivity() {
             if(locItemsList.size>0){
                 binding.hasSavedLocations = true
             }
-            weatherListAdapter.submitList(locItemsList)
 
         }
 
         mLocalWeatherViewModel.liveWorkRequest.observe(this, Observer {
             initWorkerObservers(it.id)
         })
-
     }
 
     private fun initWorkerObservers(uuid:UUID){
@@ -61,9 +61,18 @@ class MainActivity : AppCompatActivity() {
             .observe(this, Observer { workInfo ->
                 // Check if the current work's state is "successfully finished"
                 if (workInfo != null && workInfo.state == WorkInfo.State.SUCCEEDED) {
-                    //displayImage(workInfo.outputData.getString(KEY_IMAGE_URI))
-                   println("data >>>>> ${workInfo.outputData.getString(Constants.KEY_API_RESPONSE)}")
+                    val respString = workInfo.outputData.getString(Constants.KEY_API_RESPONSE)
+                    respString?.let {
+                        val weatherItem  = JsonUtils.responseParser(WeatherDisplayItem.serializer(),it) as? WeatherDisplayItem
+                        LocationQueue.updateDataResult(weatherItem)
+                        createOrUpdateListItems()
+                    }
                 }
             })
+    }
+
+    private fun createOrUpdateListItems(){
+        val list = LocationQueue.getLocationQueueAsList()
+        weatherListAdapter.submitList(list)
     }
 }
