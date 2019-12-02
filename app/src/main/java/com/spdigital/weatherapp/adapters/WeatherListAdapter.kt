@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.spdigital.weatherapp.R
 import com.spdigital.weatherapp.databinding.WeatherinfoListitemBinding
+import com.spdigital.weatherapp.viewmodel.WeatherItemInfoViewModel
 
 class WeatherListAdapter :
     ListAdapter<String, WeatherListAdapter.ViewHolder>(WeatherDiffCallback()) {
@@ -31,7 +32,8 @@ class WeatherListAdapter :
 
         fun bind(data: String) {
             with(binding) {
-                binding.location = data
+               // binding.location = data
+                viewModel = WeatherItemInfoViewModel(data)
                 executePendingBindings()
             }
         }
