@@ -32,7 +32,7 @@ class WeatherItemInfoViewModel(
     val observationTime
         get() = i.locationCondition?.observation_time
 
-    fun getTemparature():String{
+    fun getTemperature():String{
         return i.locationCondition?.let{
             if(temperature == "c"){
                 it.temp_C

@@ -29,6 +29,9 @@ object LocationQueue {
         queue.clear()
     }
 
+    fun popLastLocation(){
+       queue.removeFirst()
+    }
     fun updateDataResult(weatherItem: WeatherDisplayItem?) {
 
         weatherItem?.let{newItem ->

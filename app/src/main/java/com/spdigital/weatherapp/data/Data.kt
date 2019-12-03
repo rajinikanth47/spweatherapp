@@ -4,8 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Data(
-    val ClimateAverages: List<ClimateAverage>,
-    val current_condition: List<CurrentCondition>,
-    val request: List<Request>,
-    val weather: List<Weather>
+    var ClimateAverages: List<ClimateAverage>?=null,
+    var current_condition: List<CurrentCondition>?=null,
+    var request: List<Request>?=null,
+    var weather: List<Weather>?=null,
+    var error: List<Error>?=null
 )

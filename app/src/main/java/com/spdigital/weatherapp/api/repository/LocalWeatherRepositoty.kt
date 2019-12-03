@@ -8,7 +8,7 @@ class LocalWeatherRepository: LocalWeatherApiService() {
     fun getLocalWeatherInfo(location: String) : Any{
         var response:String
         try {
-            response = serviceApiCall(location).toString()
+            response = serviceApiCall(location.replace(" ", "%20")).toString()
         } catch (e: Exception) {
             Log.v(TAG,e.message)
             return e

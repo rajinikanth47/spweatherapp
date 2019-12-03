@@ -1,7 +1,6 @@
 package com.spdigital.weatherapp
 
 
-import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.content.Context
 import android.os.Build
@@ -12,12 +11,14 @@ import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.ArrayAdapter
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.google.android.material.snackbar.Snackbar
 import com.spdigital.weatherapp.adapters.WeatherListAdapter
 import com.spdigital.weatherapp.data.WeatherDisplayItem
 import com.spdigital.weatherapp.databinding.ActivityMainBinding
@@ -49,15 +50,12 @@ class MainActivity : AppCompatActivity() {
         }
         binding.appToolbar.title = ""
         setSupportActionBar(binding.appToolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
 
         binding.appToolbar.navigationIcon = null
         mLocalWeatherViewModel = ViewModelProviders.of(this).get(LocalWeatherViewModel::class.java)
         weatherListAdapter = WeatherListAdapter()
-
-
         binding.locationList.adapter = weatherListAdapter
-
         binding.hasSavedLocations = false
         loadCountriesData()
         loadDataInAutoComplete()
@@ -67,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         binding.countriesList.onItemClickListener =
             OnItemClickListener { parent, v, position, _ ->
                 hideKeyBoard(v)
+                showProgressBar(View.VISIBLE)
                 val selected = parent.getItemAtPosition(position) as String
                 this.binding.countriesList.clearListSelection()
                 this.binding.countriesList.text = null
@@ -90,8 +89,14 @@ class MainActivity : AppCompatActivity() {
                             WeatherDisplayItem.serializer(),
                             it
                         ) as? WeatherDisplayItem
-                        LocationQueue.updateDataResult(weatherItem)
-                        createOrUpdateListItems()
+                        showProgressBar(View.GONE)
+                        if(weatherItem?.errorResp != null){
+                            LocationQueue.popLastLocation()
+                            showSnackBar(weatherItem.errorResp?:"Technical Error!")
+                        }else{
+                            LocationQueue.updateDataResult(weatherItem)
+                            createOrUpdateListItems()
+                        }
                     }
                 }
             })
@@ -103,6 +108,7 @@ class MainActivity : AppCompatActivity() {
         binding.hasSavedLocations = true
         weatherListAdapter.submitList(list)
         weatherListAdapter.notifyDataSetChanged()
+        binding.locationList.smoothScrollToPosition(0)
     }
 
     private fun loadCountriesData() {
@@ -129,7 +135,6 @@ class MainActivity : AppCompatActivity() {
                 list
             )
         )
-
     }
 
     private fun hideKeyBoard(v: View) {
@@ -138,5 +143,22 @@ class MainActivity : AppCompatActivity() {
             currentFocus?.windowToken,
             InputMethodManager.HIDE_NOT_ALWAYS
         )
+    }
+
+    private fun showSnackBar(msg:String){
+        Snackbar.make(binding.clRootView, msg, Snackbar.LENGTH_LONG).apply {view.layoutParams = (view.layoutParams as FrameLayout.LayoutParams).apply {setMargins(leftMargin, topMargin, rightMargin, getHeightOfBottomNav())}}.show()
+    }
+
+    private fun getHeightOfBottomNav(): Int {
+
+        val resourceId =  resources.getIdentifier("navigation_bar_height","dimen","android")
+        if (resourceId > 0) {
+                    return resources.getDimensionPixelSize(resourceId)
+        }
+        return 0
+    }
+
+    private fun showProgressBar(isShow:Int){
+        binding.progressBarCyclic.visibility = isShow
     }
 }
