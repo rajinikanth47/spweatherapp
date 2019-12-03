@@ -1,5 +1,6 @@
 package com.spdigital.weatherapp.util
 
+import com.spdigital.weatherapp.data.LocationList
 import com.spdigital.weatherapp.data.WeatherDisplayItem
 import java.util.*
 
@@ -8,12 +9,22 @@ object LocationQueue {
     val queue :Deque<WeatherDisplayItem>  = LinkedList()
     var maxSize = 10
 
+    fun isLocationAdded(input:String):Boolean{
+        queue.map {
+            if(it.location == input)
+                return true
+        }
+        return false
+    }
+
+    fun addLocationItems(item: LocationList) {
+        item.location.map {
+            addLocationToQueue(it.location)
+        }
+    }
+
     fun addLocationToQueue(location:String) : Int{
 
-        queue.map {
-            if(it.location == location)
-                return -1
-        }
         if(queue.size == maxSize){
             queue.removeLast()
         }

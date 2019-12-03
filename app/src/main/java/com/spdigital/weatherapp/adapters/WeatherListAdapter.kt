@@ -33,10 +33,6 @@ class WeatherListAdapter :
 
         fun bind(data: WeatherDisplayItem) {
             with(binding) {
-                // binding.location = data
-
-                println("Location Data:: $data")
-
                 viewModel = WeatherItemInfoViewModel(data)
                 viewModel?.getWeatherIcon(binding.weatherImage)
                 executePendingBindings()

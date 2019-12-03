@@ -5,13 +5,11 @@ import android.annotation.TargetApi
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.ArrayAdapter
-import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.Observer
@@ -20,14 +18,14 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.google.android.material.snackbar.Snackbar
 import com.spdigital.weatherapp.adapters.WeatherListAdapter
+import com.spdigital.weatherapp.controller.PreferenceCtrl
+import com.spdigital.weatherapp.data.LocationList
 import com.spdigital.weatherapp.data.WeatherDisplayItem
 import com.spdigital.weatherapp.databinding.ActivityMainBinding
-import com.spdigital.weatherapp.util.Constants
-import com.spdigital.weatherapp.util.CountryUtils
-import com.spdigital.weatherapp.util.JsonUtils
-import com.spdigital.weatherapp.util.LocationQueue
+import com.spdigital.weatherapp.util.*
+import com.spdigital.weatherapp.util.Constants.LOCATION_PREF_ITEM
+import com.spdigital.weatherapp.util.Constants.SHARED_PREF_NAME
 import com.spdigital.weatherapp.viewmodel.LocalWeatherViewModel
-import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -35,76 +33,77 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var weatherListAdapter: WeatherListAdapter
     private lateinit var mLocalWeatherViewModel: LocalWeatherViewModel
+    private lateinit var mPreferenceCtrl: PreferenceCtrl
+    private  var isBulkLoading: Boolean = false
+
+    companion object{
+        const val RAW_LOCATIONS_JSON_FILE_NAME = "countries"
+    }
 
     @TargetApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            val w = window
-            w.setFlags(
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-            )
-        }
-        binding.appToolbar.title = ""
-        setSupportActionBar(binding.appToolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(false)
-
-        binding.appToolbar.navigationIcon = null
-        mLocalWeatherViewModel = ViewModelProviders.of(this).get(LocalWeatherViewModel::class.java)
-        weatherListAdapter = WeatherListAdapter()
-        binding.locationList.adapter = weatherListAdapter
-        binding.hasSavedLocations = false
+        applyToolbarAndStatusBarSettings()
+        setSharePreferencesController()
+        prepareWeatherOnlineList()
         loadCountriesData()
-        loadDataInAutoComplete()
-        mLocalWeatherViewModel.liveWorkRequest.observe(this, Observer {
-            initWorkerObservers(it.id)
-        })
+        loadPreferencesLocationsData()
+
         binding.countriesList.onItemClickListener =
-            OnItemClickListener { parent, v, position, _ ->
-                hideKeyBoard(v)
+            OnItemClickListener { parent, _, position, _ ->
+                hideKeyBoard()
                 showProgressBar(View.VISIBLE)
                 val selected = parent.getItemAtPosition(position) as String
                 this.binding.countriesList.clearListSelection()
                 this.binding.countriesList.text = null
-                addLocationToQueue(selected)
+
+                if(!LocationQueue.isLocationAdded(selected)) {
+                    addLocationToQueue(selected)
+                }else{
+                    showSnackBar(getText(R.string.country_already_in_list).toString())
+                }
             }
     }
 
-    private fun addLocationToQueue(value: String) {
-        LocationQueue.addLocationToQueue(value)
-        mLocalWeatherViewModel.fetchLocalWeatherData(value)
+    private fun prepareWeatherOnlineList(){
+        mLocalWeatherViewModel = ViewModelProviders.of(this).get(LocalWeatherViewModel::class.java)
+        weatherListAdapter = WeatherListAdapter()
+        binding.locationList.adapter = weatherListAdapter
+
+    }
+    private fun applyToolbarAndStatusBarSettings(){
+        binding.appToolbar.title = ""
+        setSupportActionBar(binding.appToolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+        binding.appToolbar.navigationIcon = null
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
+        }
     }
 
-    private fun initWorkerObservers(uuid: UUID) {
-        WorkManager.getInstance(this).getWorkInfoByIdLiveData(uuid)
-            .observe(this, Observer { workInfo ->
-                // Check if the current work's state is "successfully finished"
-                if (workInfo != null && workInfo.state == WorkInfo.State.SUCCEEDED) {
-                    val respString = workInfo.outputData.getString(Constants.KEY_API_RESPONSE)
-                    respString?.let {
-                        val weatherItem = JsonUtils.responseParser(
-                            WeatherDisplayItem.serializer(),
-                            it
-                        ) as? WeatherDisplayItem
-                        showProgressBar(View.GONE)
-                        if(weatherItem?.errorResp != null){
-                            LocationQueue.popLastLocation()
-                            showSnackBar(weatherItem.errorResp?:"Technical Error!")
-                        }else{
-                            LocationQueue.updateDataResult(weatherItem)
-                            createOrUpdateListItems()
-                        }
-                    }
-                }
-            })
+    private fun setSharePreferencesController(){
+        val sp = getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE)
+        mPreferenceCtrl = PreferenceCtrl.getInstance(sp)
+    }
+
+    private fun addLocationToQueue(value: String) {
+        showProgressBar(View.VISIBLE)
+        LocationQueue.addLocationToQueue(value)
+        loadSingleLocationData(value)
+    }
+
+    private fun loadDataTOListView(weatherItem: WeatherDisplayItem?) {
+        weatherItem?.let{
+            LocationQueue.updateDataResult(it)
+            createOrUpdateListItems()
+            addOrUpdatePreferences()
+        }
     }
 
     private fun createOrUpdateListItems() {
         val list = LocationQueue.getLocationQueueAsList()
-        println("Weather Item :: >>>>>>>>>>>>>>> $list")
         binding.hasSavedLocations = true
         weatherListAdapter.submitList(list)
         weatherListAdapter.notifyDataSetChanged()
@@ -115,13 +114,14 @@ class MainActivity : AppCompatActivity() {
         try {
             val ins = resources.openRawResource(
                 resources.getIdentifier(
-                    "countries",
+                    RAW_LOCATIONS_JSON_FILE_NAME,
                     "raw", packageName
                 )
             )
             CountryUtils.readCountriesFromStream(ins)
+            loadDataInAutoComplete()
         } catch (ex: Exception) {
-            Log.e("TAG", "$ex")
+           showSnackBar(getText(R.string.error_country_list_fail).toString())
         }
     }
 
@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun hideKeyBoard(v: View) {
+    private fun hideKeyBoard() {
         val iManager = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
         iManager?.hideSoftInputFromWindow(
             currentFocus?.windowToken,
@@ -145,20 +145,102 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun showSnackBar(msg:String){
-        Snackbar.make(binding.clRootView, msg, Snackbar.LENGTH_LONG).apply {view.layoutParams = (view.layoutParams as FrameLayout.LayoutParams).apply {setMargins(leftMargin, topMargin, rightMargin, getHeightOfBottomNav())}}.show()
-    }
+    private fun showSnackBar(msg:String?=null){
+        val showText = msg?.let{
+            msg
+        }?:run{
+             resources.getText(R.string.technical_error).toString()
 
-    private fun getHeightOfBottomNav(): Int {
-
-        val resourceId =  resources.getIdentifier("navigation_bar_height","dimen","android")
-        if (resourceId > 0) {
-                    return resources.getDimensionPixelSize(resourceId)
         }
-        return 0
+        Snackbar.make(binding.clRootView, showText, Snackbar.LENGTH_LONG).show()
     }
 
     private fun showProgressBar(isShow:Int){
         binding.progressBarCyclic.visibility = isShow
     }
+
+    private fun addOrUpdatePreferences(){
+        val mList = LocationQueue.getLocationQueueAsList().asReversed()
+        val locationObj = LocationList(mList)
+        mPreferenceCtrl.putPreferencesFromObject(locationObj)
+    }
+
+    private fun loadPreferencesLocationsData(){
+        var locationList = loadPreferenceValues()
+        if(locationList.location.size > 0) {
+            isBulkLoading = true
+            LocationQueue.addLocationItems(locationList)
+            loadBulkLocationsData(locationList)
+        }else{
+            binding.hasSavedLocations = false
+            isBulkLoading = false
+        }
+    }
+
+    private fun loadPreferenceValues():LocationList{
+        var item = mPreferenceCtrl.getPreferencesList(LocationList.serializer(),LOCATION_PREF_ITEM)
+        return item?.let {
+            it as LocationList
+        }?: LocationList(
+            mutableListOf())
+    }
+
+    private fun loadSingleLocationData(location: String){
+        mLocalWeatherViewModel.fetchLocalWeatherData(location, serviceCallback())
+    }
+
+    private fun loadBulkLocationsData(mList: LocationList){
+        showProgressBar(View.VISIBLE)
+        val length = mList.location.size
+        var isLastItem = false
+        for ((index, value) in mList.location.withIndex()) {
+            if(index == length-1)
+                isLastItem = true
+
+            mLocalWeatherViewModel.fetchLocalWeatherData(value.location, serviceCallback(),isLastItem)
+        }
+    }
+
+    private fun serviceCallback(): ServiceCallback<LocalWeatherViewModel.TriggerItem> {
+        return object : ServiceCallback<LocalWeatherViewModel.TriggerItem> {
+            override fun onSuccess(response: LocalWeatherViewModel.TriggerItem?) {
+                response?.let {
+                    listenWorkerResponse(it)
+
+                }
+            }
+            override fun onError(error: Throwable) {
+                showSnackBar()
+            }
+        }
+    }
+
+    private fun listenWorkerResponse(trigger:LocalWeatherViewModel.TriggerItem){
+        WorkManager.getInstance(this).getWorkInfoByIdLiveData(trigger.uuid)
+            .observe(this, Observer { workInfo ->
+                // Check if the current work's state is "successfully finished"
+                if (workInfo != null && workInfo.state == WorkInfo.State.SUCCEEDED) {
+                    val respString = workInfo.outputData.getString(Constants.KEY_API_RESPONSE)
+                    respString?.let {
+                        val weatherItem = JsonUtils.responseParser(
+                            WeatherDisplayItem.serializer(),
+                            it
+                        ) as? WeatherDisplayItem
+
+                        if(trigger.progressVisibleStatus){
+                            showProgressBar(View.GONE)
+                        }
+
+                        if(weatherItem?.errorResp != null){
+                            LocationQueue.popLastLocation()
+                            showSnackBar(getText(R.string.error_location_finding).toString())
+                        }else{
+                            loadDataTOListView(weatherItem)
+                        }
+                    }
+                }
+            })
+    }
+
+
 }

@@ -41,7 +41,7 @@ class FetchLocalWeatherWorker(
                                 Result.success(d)
                             } else {
                                 val error = it.data.error?.get(0)?.msg
-                                    ?: "Technical error, Please try again."
+                                    ?: "error"
                                 val weatherDisplayItem =
                                     WeatherDisplayItem(location = loc, errorResp = error)
                                 val stringFormatItem = JsonUtils.toJson(weatherDisplayItem)
@@ -49,18 +49,15 @@ class FetchLocalWeatherWorker(
                                 Result.success(d)
                             }
                         } ?: run {
-                            Log.e(TAG, "Location data error!")
                             Result.failure()
                         }
                     }
                 }
             } ?: run {
-                Log.e(TAG, "Location not provided!!")
                 Result.failure()
             }
 
         } catch (ex: Exception) {
-            Log.e(TAG, "Error fetching data!!", ex)
             Result.failure()
         }
     }

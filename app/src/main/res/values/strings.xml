@@ -1,7 +1,11 @@
 <resources>
-    <string name="app_name">spweatherapp</string>
+    <string name="app_name">SpWeather</string>
     <string name="search">Search</string>
     <string name="search_location">Search location..</string>
     <string name="app_title">WeatherOnline</string>
-    <string name="please_start_adding_locations_by_the_search">Please start adding locations by the search.</string>
+    <string name="please_start_adding_locations_by_the_search">Please search the location for the weather updates.</string>
+    <string name="error_location_finding">Sorry, we are not able to process your request. Please try again later</string>
+    <string name="error_country_list_fail">Sorry, we are not able to load the locations. Please try again later</string>
+    <string name="technical_error">Something went wrong!!</string>
+    <string name="country_already_in_list">The location you are trying to add is already in the list</string>
 </resources>
