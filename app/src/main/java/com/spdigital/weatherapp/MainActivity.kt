@@ -160,7 +160,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun addOrUpdatePreferences(){
-        val mList = LocationQueue.getLocationQueueAsList().asReversed()
+        val mList = LocationQueue.getLocationListForSavingInPreferences().asReversed()
         val locationObj = LocationList(mList)
         mPreferenceCtrl.putPreferencesFromObject(locationObj)
     }

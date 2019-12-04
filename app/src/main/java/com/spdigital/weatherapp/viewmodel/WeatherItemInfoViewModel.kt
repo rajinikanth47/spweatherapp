@@ -29,6 +29,10 @@ class WeatherItemInfoViewModel(
     val weatherTemperatureInF
         get() = i.locationCondition?.temp_F
 
+
+    val humidity
+        get() = "Humidity ${i.locationCondition?.humidity}"
+
     val observationTime
         get() = i.locationCondition?.observation_time
 

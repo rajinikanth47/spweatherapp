@@ -25,11 +25,24 @@ object LocationQueue {
 
     fun addLocationToQueue(location:String) : Int{
 
-        if(queue.size == maxSize){
-            queue.removeLast()
-        }
+//        if(queue.size == maxSize){
+//            queue.removeLast()
+//        }
         queue.addFirst(WeatherDisplayItem(location=location))
         return 1
+    }
+
+
+    //Allow first 10 records to save
+    fun getLocationListForSavingInPreferences() :MutableList<WeatherDisplayItem>{
+
+        val list = queue.toMutableList()
+        return if (list.size > 10) {
+            list.take(10) as MutableList<WeatherDisplayItem>
+        }else{
+            list
+        }
+
     }
 
     fun getLocationQueueAsList():MutableList<WeatherDisplayItem>{

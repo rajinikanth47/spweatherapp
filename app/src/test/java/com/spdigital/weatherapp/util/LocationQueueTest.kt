@@ -43,4 +43,16 @@ class LocationQueueTest {
         }
 
     }
+    @Test
+    fun getLocationListForSavingInPreferencesTest(){
+        val locationList = listOf("1", "2", "3","4","5","6","7","8","9","10","11")
+        //val locationList1 = listOf("1", "2", "3")
+        locationList.map {
+            LocationQueue.addLocationToQueue(it)
+        }
+
+        val list =  LocationQueue.getLocationListForSavingInPreferences()
+        assert(list[9].location == "2" && list[0].location == "11")
+
+    }
 }
