@@ -7,7 +7,7 @@ import java.io.InputStream
 
 object CountryUtils {
 
-    private var jsonCountriesContent: String? = null
+    var jsonCountriesContent: String? = null
     private var mutableListData = mutableListOf<String>()
 
     fun readCountriesFromStream(stream: InputStream) {
